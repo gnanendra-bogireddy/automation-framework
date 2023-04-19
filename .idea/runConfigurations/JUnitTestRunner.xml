@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="JUnitTestRunner" type="JUnit" factoryName="JUnit" singleton="false" nameIsGenerated="true">
+    <module name="automation-project" />
+    <shortenClasspath name="ARGS_FILE" />
+    <option name="PACKAGE_NAME" value="Runner" />
+    <option name="MAIN_CLASS_NAME" value="Runner.JUnitTestRunner" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-Dcucumber.filter.tags=&quot;@resreq&quot;" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
