@@ -1,4 +1,4 @@
-package resreq;
+package Util;
 
 
 import java.io.IOException;
