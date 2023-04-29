@@ -6,7 +6,7 @@
     <option name="MAIN_CLASS_NAME" value="Runner.JUnitTestRunner" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
-    <option name="VM_PARAMETERS" value="-Dcucumber.filter.tags=&quot;@resreq&quot;" />
+    <option name="VM_PARAMETERS" value="-Dcucumber.filter.tags=&quot;@authorizeorder&quot;" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

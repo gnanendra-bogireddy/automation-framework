@@ -6,4 +6,5 @@ import lombok.Data;
 public class TestHelper {
 
     private String paypalToken;
+    private String paypalOrderId;
 }

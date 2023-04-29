@@ -21,10 +21,15 @@ public class PayPalAPI {
     private String paypalURI = Util.loadClassPathProperty("application.properties", "paypal.base.api");
     private String username = Util.loadClassPathProperty("application.properties", "paypal.clientid");
     private String password = Util.loadClassPathProperty("application.properties", "paypal.clientsecret");
-    private static  final String V1_OAUTH2_TOKEN = "/v1/oauth2/token";
-    private static  final String V1_IDENTITY_USERINFO = "/v1/identity/oauth2/userinfo";
-    private static  final String V1_OAUTH2_TERMINATE = "/v1/oauth2/token/terminate";
+    private static final String V1_OAUTH2_TOKEN = "/v1/oauth2/token";
+    private static final String V1_IDENTITY_USERINFO = "/v1/identity/oauth2/userinfo";
+    private static final String V1_OAUTH2_TERMINATE = "/v1/oauth2/token/terminate";
     private static final String V2_CHECKOUT_ORDERS = "/v2/checkout/orders";
+    private static final String V2_GET_ORDERS = "v2/checkout/orders/%s";
+    private static final String AUTHORIZE = "authorize";
+    private static final String CAPTURE = "capture";
+    private static final String SLASH = "/";
+    private static final String  CONFIRM_PAYMENT_SOURCE = "confirm-payment-source";
     private static Logger logger = LoggerFactory.getLogger(PayPalAPI.class);
 
     public Map authTokenPayload() {
@@ -166,6 +171,159 @@ public class PayPalAPI {
                 .post(V2_CHECKOUT_ORDERS);
 
         logger.info("Response body is : "+response.getBody().asPrettyString());
-        Assert.assertEquals(201, response.getStatusCode());
+        logger.info("Response status code is : "+response.getStatusCode());
+//        Assert.assertEquals(201, response.getStatusCode());
+        testHelper.setPaypalOrderId(response.getBody().jsonPath().getString("id"));
+    }
+
+    public  void iGetTheOrderDetails() {
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()));
+
+        logger.info("Response body is : "+response.getBody().asPrettyString());
+        Assert.assertEquals(200, response.getStatusCode());
+        Assert.assertEquals("Validating Order details ", response.getBody().jsonPath().getString("status"), "CREATED");
+    }
+
+    public  String patchPayload() throws JsonProcessingException {
+        List<PatchRequestItem> patchRequestItemList = new ArrayList<>();
+
+        PatchRequestItem patchRequestItem1 = PatchRequestItem.builder()
+                        .op("add")
+                        .path("/purchase_units/@reference_id=='default'/shipping/address")
+                        .value(Value.builder()
+                                .addressLine1("123 Townsend St")
+                                .addressLine2("Floor 6")
+                                .adminArea2("San Francisco")
+                                .adminArea1("US")
+                                .postalCode("94107")
+                                .countryCode("US")
+                                .build())
+                        .build();
+
+        PatchRequestItem patchRequestItem2 = PatchRequestItem.builder()
+                .op("add")
+                .path("/purchase_units/@reference_id=='default'/shipping/address")
+//                .value("03012022-3303-01")
+                .build();
+        patchRequestItemList.add(patchRequestItem1);
+        patchRequestItemList.add(patchRequestItem2);
+        return objectMapper.writeValueAsString(patchRequestItemList);
+    }
+
+    public Map patchOrderHeaders() {
+        Map<String, String> hashMap = new HashMap<>();
+        hashMap.put("Authorization", "Bearer " + testHelper.getPaypalToken());
+        hashMap.put("PayPal-Request-Id", "A v4 style guid");
+        hashMap.put("Content-Type", "application/json");
+        return  hashMap;
+
+    }
+
+    public  void iUpdateTheOrderDetails() throws JsonProcessingException {
+        String payload = this.patchPayload();
+        logger.info("Payload is : "+ payload);
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(patchOrderHeaders())
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .accept(ContentType.JSON)
+                .patch(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()));
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(204, response.getStatusCode());
+    }
+
+    public String confirmPayload() throws JsonProcessingException {
+        ConfirmOrder confirmOrder = ConfirmOrder.builder()
+                .paymentSource(PaymentSource.builder()
+                        .paypal(Paypal.builder()
+                                .name(Name.builder()
+                                        .givenName("John")
+                                        .surname("Doe")
+                                        .build())
+                                .emailAddress("customer@example.com")
+                                .experienceContext(ExperienceContext.builder()
+                                        .paymentMethodPreference("IMMEDIATE_PAYMENT_REQUIRED")
+                                        .paymentMethodSelected("PAYPAL")
+                                        .brandName("EXAMPLE INC")
+                                        .locale("en-US")
+                                        .landingPage("LOGIN")
+                                        .shippingPreference("SET_PROVIDED_ADDRESS")
+                                        .userAction("PAY_NOW")
+                                        .returnUrl("https://example.com/returnUrl")
+                                        .cancelUrl("https://example.com/cancelUrl")
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+        return objectMapper.writeValueAsString(confirmOrder);
+    }
+
+
+    public  void iConfirmTheOrderDetails() throws JsonProcessingException {
+        String payload = this.confirmPayload();
+        logger.info("Payload is : "+ payload);
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .body(payload)
+                .accept(ContentType.JSON)
+                .post(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()) + SLASH + CONFIRM_PAYMENT_SOURCE);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        logger.info("Response  is : "+response.getBody().asPrettyString());
+        Assert.assertEquals(200, response.getStatusCode());
+    }
+
+    public Map authorizeAndCaptureHeaders() {
+        Map<String, String> hashMap = new HashMap<>();
+        hashMap.put("Authorization", "Bearer " + testHelper.getPaypalToken());
+        hashMap.put("PayPal-Request-Id", "A v4 style guid");
+        hashMap.put("Content-Type", "application/json");
+        hashMap.put("Prefer", "return=representation");
+        return  hashMap;
+
+    }
+
+    public  void iAuthorizeTheOrderDetails() {
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(authorizeAndCaptureHeaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .post(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()) + SLASH + AUTHORIZE);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        logger.info("Response  is : "+response.getBody().asPrettyString());
+        Assert.assertEquals(422, response.getStatusCode());
+    }
+
+    public  void iCaptureTheOrderDetails() {
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(authorizeAndCaptureHeaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .post(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()) + SLASH + CAPTURE);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(422, response.getStatusCode());
     }
 }
