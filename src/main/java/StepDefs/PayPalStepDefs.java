@@ -7,6 +7,9 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 public class PayPalStepDefs {
 
     private  PayPalAPI payPalAPI = new PayPalAPI();
@@ -53,5 +56,30 @@ public class PayPalStepDefs {
     @And("I confirm an oder with paypal")
     public void iConfirmAnOderWithPaypal() throws JsonProcessingException {
         payPalAPI.iConfirmTheOrderDetails();
+    }
+
+    @When("I create a templates with paypal api")
+    public void iCreateATemplatesWithPaypalApi() throws IOException, URISyntaxException {
+        payPalAPI.iCreateATemplateWithPaypal();
+    }
+
+    @Then("I get all the templates from paypal api")
+    public void iGetAllTheTemplatesFromPaypalApi() {
+        payPalAPI.iGetAllTemplatesWithPaypal();
+    }
+
+    @Then("I get the template from paypal api")
+    public  void iGetTheTemplateFromPaypalApi() {
+        payPalAPI.iGetTemplateWithPaypal();
+    }
+
+    @Then("I update the template from paypal api")
+    public  void iUpdateTheTemplateFromPaypalApi() {
+        payPalAPI.iUpdateTemplateWithPaypal();
+    }
+
+    @Then("I delete the template from paypal api")
+    public  void iDeleteTheTemplateFromPaypalApi() {
+        payPalAPI.iDeleteTemplateWithPaypal();
     }
 }

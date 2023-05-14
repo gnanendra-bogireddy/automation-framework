@@ -1,15 +1,20 @@
 package Util;
 
 
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.commons.io.FileUtils;
+
+import java.io.*;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Util {
 
-    public static String loadClassPathProperty(String filename, String property) {
+    public static String loadClassPathProperty( String filename, String property) {
 
-        InputStream inputStream = ClassLoader.getSystemClassLoader().getResourceAsStream(filename);
+        InputStream inputStream = ClassLoader.getSystemClassLoader().getResourceAsStream( filename);
 
         Properties properties;
         try {
@@ -19,6 +24,11 @@ public class Util {
             throw new RuntimeException(e);
         }
         return properties.getProperty(property);
+    }
+
+    public static String loadPayloadFromClassPathFile(String filename) throws IOException, URISyntaxException {
+        File file = new File(ClassLoader.getSystemClassLoader().getResource(filename).toURI());
+        return FileUtils.readFileToString(file, "UTF-8");
     }
 
 

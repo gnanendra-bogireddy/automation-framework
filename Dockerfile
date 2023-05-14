@@ -1,4 +1,2 @@
-FROM eclipse-temurin:17
-ADD maven:latest
-ENV TAGS=""
+FROM 3.9.1-eclipse-temurin-17
 
