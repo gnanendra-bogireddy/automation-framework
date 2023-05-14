@@ -12,6 +12,10 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class PayPalAPI {
@@ -26,6 +30,9 @@ public class PayPalAPI {
     private static final String V1_OAUTH2_TERMINATE = "/v1/oauth2/token/terminate";
     private static final String V2_CHECKOUT_ORDERS = "/v2/checkout/orders";
     private static final String V2_GET_ORDERS = "v2/checkout/orders/%s";
+    private static final String V2_INVOICING_TEMPLATES = "v2/invoicing/templates";
+    private static final String V2_INVOICING_TEMPLATES_GET = "v2/invoicing/templates/%s";
+    private static final String V2_INVOICING_TEMPLATES_GET_ALL = "v2/invoicing/templates?fields=all&page=1&page_size=10";
     private static final String AUTHORIZE = "authorize";
     private static final String CAPTURE = "capture";
     private static final String SLASH = "/";
@@ -209,8 +216,8 @@ public class PayPalAPI {
 
         PatchRequestItem patchRequestItem2 = PatchRequestItem.builder()
                 .op("add")
-                .path("/purchase_units/@reference_id=='default'/shipping/address")
-//                .value("03012022-3303-01")
+                .path("/purchase_units/@reference_id=='default'/invoice_id")
+                .value(null)
                 .build();
         patchRequestItemList.add(patchRequestItem1);
         patchRequestItemList.add(patchRequestItem2);
@@ -228,19 +235,21 @@ public class PayPalAPI {
 
     public  void iUpdateTheOrderDetails() throws JsonProcessingException {
         String payload = this.patchPayload();
-        logger.info("Payload is : "+ payload);
+        String patchPayload = payload.replace("\"value\":null", "\"value\": \"03012022-3303-01\"");
+        logger.info("Payload is : "+ patchPayload);
         Response response = RestAssured.given()
                 .baseUri(paypalURI)
                 .auth()
                 .none()
                 .headers(patchOrderHeaders())
                 .contentType(ContentType.JSON)
-                .body(payload)
+                .body(patchPayload)
                 .accept(ContentType.JSON)
                 .patch(String.format(V2_GET_ORDERS, testHelper.getPaypalOrderId()));
 
         logger.info("Response code is : "+response.getStatusCode());
         Assert.assertEquals(204, response.getStatusCode());
+        logger.info("Response is : "+response.getBody().asPrettyString());
     }
 
     public String confirmPayload() throws JsonProcessingException {
@@ -325,5 +334,98 @@ public class PayPalAPI {
 
         logger.info("Response code is : "+response.getStatusCode());
         Assert.assertEquals(422, response.getStatusCode());
+    }
+
+    public String createTemplatePayload() throws IOException, URISyntaxException {
+        String payload = Util.loadPayloadFromClassPathFile("Json/CreateTemplate.json");
+        String uniqueName = "template_" + Instant.now().getEpochSecond();
+        String payloadAfterReplace = payload.replace("\"name\": \"&UniqueId\",", String.format("\"name\": \"%s\",", uniqueName));
+        logger.info("Payload is : "+payloadAfterReplace);
+        return payloadAfterReplace;
+    }
+
+    public  void iCreateATemplateWithPaypal() throws IOException, URISyntaxException {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(orderSubmitHeaders())
+                .contentType(ContentType.JSON)
+                .body(createTemplatePayload())
+                .accept(ContentType.JSON)
+                .post(V2_INVOICING_TEMPLATES);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(201, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+        testHelper.setTemplateId(response.getBody().jsonPath().getString("id"));
+    }
+
+    public  void iGetTemplateWithPaypal() {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get(String.format(V2_INVOICING_TEMPLATES_GET, testHelper.getTemplateId()));
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(200, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+
+    }
+
+    public  void iGetAllTemplatesWithPaypal() {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get(V2_INVOICING_TEMPLATES_GET_ALL);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(200, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+
+    }
+
+    public  void iUpdateTemplateWithPaypal() {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(orderSubmitHeaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .get(String.format(V2_INVOICING_TEMPLATES_GET, testHelper.getTemplateId()));
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(200, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+        testHelper.setTemplateId(response.getBody().jsonPath().getString("id"));
+    }
+
+    public  void iDeleteTemplateWithPaypal() {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .delete(String.format(V2_INVOICING_TEMPLATES_GET, testHelper.getTemplateId()));
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(204, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
     }
 }
