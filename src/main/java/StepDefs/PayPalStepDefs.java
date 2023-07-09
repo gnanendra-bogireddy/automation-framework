@@ -15,16 +15,13 @@ public class PayPalStepDefs {
     private  PayPalAPI payPalAPI = new PayPalAPI();
 
     @Given("^I get a valid token from paypal api$")
-    public  void iGetAValidToken() {
-        payPalAPI.iGetPaypalToken();
-    }
-    @When("^I get a user details and validate the details$")
-    public void iGetUserDetails() {
-        payPalAPI.iGetUserInfo();
+    public void iGetAValidToken() { payPalAPI.iGetPaypalToken(); }
 
-    }
+    @When("^I get a user details and validate the details$")
+    public void iGetUserDetails() { payPalAPI.iGetUserInfo(); }
+
     @Then("^I terminate the session with api$")
-    public  void iTerminateSession() {
+    public void iTerminateSession() {
         payPalAPI.iTerminateAccessToken();
     }
 
@@ -39,9 +36,7 @@ public class PayPalStepDefs {
     }
 
     @Then("I update the paypal order")
-    public void iUpdateThePaypalOrder() throws JsonProcessingException {
-        payPalAPI.iUpdateTheOrderDetails();
-    }
+    public void iUpdateThePaypalOrder() throws JsonProcessingException { payPalAPI.iUpdateTheOrderDetails(); }
 
     @Then("I authorize order with paypalapi")
     public void iAuthorizeOrderWithPaypalapi() {
@@ -54,32 +49,32 @@ public class PayPalStepDefs {
     }
 
     @And("I confirm an oder with paypal")
-    public void iConfirmAnOderWithPaypal() throws JsonProcessingException {
-        payPalAPI.iConfirmTheOrderDetails();
-    }
+    public void iConfirmAnOderWithPaypal() throws JsonProcessingException { payPalAPI.iConfirmTheOrderDetails(); }
 
     @When("I create a templates with paypal api")
-    public void iCreateATemplatesWithPaypalApi() throws IOException, URISyntaxException {
-        payPalAPI.iCreateATemplateWithPaypal();
-    }
+    public void iCreateATemplatesWithPaypalApi() throws IOException, URISyntaxException { payPalAPI.iCreateATemplateWithPaypal(); }
 
     @Then("I get all the templates from paypal api")
-    public void iGetAllTheTemplatesFromPaypalApi() {
-        payPalAPI.iGetAllTemplatesWithPaypal();
-    }
+    public void iGetAllTheTemplatesFromPaypalApi() { payPalAPI.iGetAllTemplatesWithPaypal(); }
 
     @Then("I get the template from paypal api")
-    public  void iGetTheTemplateFromPaypalApi() {
+    public void iGetTheTemplateFromPaypalApi() {
         payPalAPI.iGetTemplateWithPaypal();
     }
 
     @Then("I update the template from paypal api")
-    public  void iUpdateTheTemplateFromPaypalApi() {
+    public void iUpdateTheTemplateFromPaypalApi() {
         payPalAPI.iUpdateTemplateWithPaypal();
     }
 
     @Then("I delete the template from paypal api")
-    public  void iDeleteTheTemplateFromPaypalApi() {
+    public void iDeleteTheTemplateFromPaypalApi() {
         payPalAPI.iDeleteTemplateWithPaypal();
     }
+
+    @When("I generate invoice number with paypal api")
+    public void iGenerateTheInvoiceNumberFromPaypalApi() { payPalAPI.iGenerateInvoiceNumberWithPaypal(); }
+
+    @When("I generate draft invoice with paypal api")
+    public void iGenerateTheDraftInvoiceFromPaypalApi() throws IOException, URISyntaxException { payPalAPI.iCreateADraftInvoiceWithPaypal(); }
 }
