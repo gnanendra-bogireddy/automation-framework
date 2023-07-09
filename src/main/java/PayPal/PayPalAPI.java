@@ -37,6 +37,17 @@ public class PayPalAPI {
     private static final String CAPTURE = "capture";
     private static final String SLASH = "/";
     private static final String  CONFIRM_PAYMENT_SOURCE = "confirm-payment-source";
+    private static final String V2_INVOICING_GENERATE_INVOICE_NUMBER = "v2/invoicing/generate-next-invoice-number";
+    private static final String V2_INVOICING_DRAFT_INVOICE = "v2/invoicing/invoices";
+    private static final String V2_INVOICING_GET_INVOICE = "v2/invoicing/invoices/%s";
+    private static final String V2_INVOICING_GET_INVOICES = "v2/invoicing/invoices?page=1&page_size=10&total_required=true&fields=amount";
+    private static final String V2_INVOICING_GENERATE_QR_CODE = "v2/invoicing/invoices/%s/generate-qr-code";
+    private static final String V2_INVOICING_UPDATE_INVOICE = "v2/invoicing/invoices/%s?send_to_recipient=true&send_to_invoicer=true";
+    private static final String V2_INVOICING_SEND_INVOICE = "v2/invoicing/invoices/%s/send";
+    private static final String V2_INVOICING_SEND_INVOICE_REMIND = "v2/invoicing/invoices/%s/remind";
+    private static final String V2_INVOICING_SEND_INVOICE_CANCEL = "v2/invoicing/invoices/%s/cancel";
+    private static final String V2_INVOICING_SEARCH_INVOICE = "v2/invoicing/search-invoices?page=1&page_size=10&total_required=true";
+    private static final String V2_INVOICING_SEND_INVOICE_PAYMENTS = "v2/invoicing/invoices/%s/payments";
     private static Logger logger = LoggerFactory.getLogger(PayPalAPI.class);
 
     public Map authTokenPayload() {
@@ -426,6 +437,47 @@ public class PayPalAPI {
 
         logger.info("Response code is : "+response.getStatusCode());
         Assert.assertEquals(204, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+    }
+
+    public  void iGenerateInvoiceNumberWithPaypal() {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .accept(ContentType.JSON)
+                .post(V2_INVOICING_GENERATE_INVOICE_NUMBER);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(200, response.getStatusCode());
+        logger.info("Response is : "+response.asPrettyString());
+        testHelper.setInvoiceNumber(response.getBody().jsonPath().getString("invoice_number"));
+    }
+
+    public String draftInvoicePayload() throws IOException, URISyntaxException {
+        String payload = Util.loadPayloadFromClassPathFile("Json/DraftInvoice.json");
+        String payloadAfterReplace = payload.replace("\"invoice_number\": \"$draft_invoice_number\",", String.format("\"invoice_number\": \"%s\",",testHelper.getInvoiceNumber()));
+        logger.info("Payload is : "+payloadAfterReplace);
+        return payloadAfterReplace;
+    }
+
+    public  void iCreateADraftInvoiceWithPaypal() throws IOException, URISyntaxException {
+
+        Response response = RestAssured.given()
+                .baseUri(paypalURI)
+                .auth()
+                .none()
+                .headers(getheaders())
+                .contentType(ContentType.JSON)
+                .body(draftInvoicePayload())
+                .accept(ContentType.JSON)
+                .post(V2_INVOICING_DRAFT_INVOICE);
+
+        logger.info("Response code is : "+response.getStatusCode());
+        Assert.assertEquals(201, response.getStatusCode());
         logger.info("Response is : "+response.asPrettyString());
     }
 }
